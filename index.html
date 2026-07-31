@@ -6,17 +6,20 @@
     <title>Times Table Practice</title>
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --secondary: #10b981;
-            --secondary-hover: #059669;
-            --warning: #f59e0b;
-            --warning-hover: #d97706;
-            --danger: #ef4444;
-            --bg: #f8fafc;
-            --text: #0f172a;
-            --card-bg: #ffffff;
-            --gray: #cbd5e1;
+            /* Pro Dark Mode Theme */
+            --primary: #818cf8; /* Calming bright indigo */
+            --primary-hover: #6366f1;
+            --secondary: #34d399; /* Sleek mint green for success */
+            --secondary-hover: #10b981;
+            --warning: #fbbf24;
+            --warning-hover: #f59e0b;
+            --danger: #f87171;
+            --bg: #0f172a; /* Deep slate background */
+            --card-bg: #1e293b; /* Slightly lighter slate for the main card */
+            --card-bg-alt: #334155; /* Secondary background for inner boxes */
+            --text: #f8fafc; /* Crisp off-white text */
+            --text-muted: #94a3b8; /* Subtle gray for secondary text */
+            --gray: #475569; /* Border color */
         }
 
         * {
@@ -39,13 +42,18 @@
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
             max-width: 650px;
             width: 100%;
             text-align: center;
         }
 
-        h1 { margin-top: 0; color: var(--primary); }
+        h1 { 
+            margin-top: 0; 
+            color: var(--text); 
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
 
         /* Menu Styles */
         .settings-row {
@@ -57,16 +65,19 @@
 
         .settings-group {
             flex: 1;
-            background: #f1f5f9;
+            background: var(--card-bg-alt);
             padding: 15px;
             border-radius: 12px;
         }
 
         .settings-group label.title {
             display: block;
-            font-weight: bold;
+            font-weight: 600;
             margin-bottom: 0.8rem;
-            color: #334155;
+            color: var(--text);
+            letter-spacing: 0.5px;
+            font-size: 0.95rem;
+            text-transform: uppercase;
         }
 
         .number-grid {
@@ -80,47 +91,50 @@
             display: block; padding: 10px;
             border: 2px solid var(--gray); border-radius: 8px;
             text-align: center; font-size: 1.2rem; font-weight: bold;
-            cursor: pointer; transition: all 0.2s; background: white;
+            cursor: pointer; transition: all 0.2s; background: var(--card-bg);
+            color: var(--text);
         }
         .checkbox-btn input:checked + span {
-            background-color: var(--primary); border-color: var(--primary); color: white;
+            background-color: var(--primary); border-color: var(--primary); color: #ffffff;
         }
 
         .radio-option {
-            display: block; margin-bottom: 8px; font-size: 1.1rem; cursor: pointer;
+            display: block; margin-bottom: 8px; font-size: 1.1rem; cursor: pointer; color: var(--text);
         }
-        .radio-option input { margin-right: 8px; transform: scale(1.2); }
+        .radio-option input { margin-right: 8px; transform: scale(1.2); accent-color: var(--primary); }
 
         .controls { display: flex; gap: 20px; margin-bottom: 1.5rem; text-align: left; }
         .control-item { flex: 1; }
-        .control-item label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .control-item label { font-weight: 600; display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.95rem;}
         
         input[type="number"] {
             width: 100%; padding: 10px; font-size: 1.1rem;
             border: 2px solid var(--gray); border-radius: 8px; outline: none;
+            background: var(--card-bg-alt); color: var(--text);
         }
         input[type="number"]:focus { border-color: var(--primary); }
 
         button {
             width: 100%; padding: 15px; font-size: 1.1rem; font-weight: bold;
-            color: white; background-color: var(--primary); border: none;
+            color: #ffffff; background-color: var(--primary); border: none;
             border-radius: 8px; cursor: pointer; margin-bottom: 10px; transition: 0.2s;
         }
         button:hover { background-color: var(--primary-hover); }
-        button.alt-btn { background-color: var(--secondary); }
-        button.alt-btn:hover { background-color: var(--secondary-hover); }
+        button.alt-btn { background-color: var(--card-bg-alt); color: var(--text); border: 1px solid var(--gray); }
+        button.alt-btn:hover { background-color: var(--gray); }
         button.cancel-btn { background-color: var(--danger); margin-top: 2rem; width: auto; padding: 10px 20px; }
-        button.flag-btn { background-color: var(--warning); margin-top: 1rem; width: auto; padding: 10px 20px; }
+        button.flag-btn { background-color: var(--warning); margin-top: 1rem; width: auto; padding: 10px 20px; color: #000; }
         button.flag-btn:hover { background-color: var(--warning-hover); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* Practice Area Styles */
         #practice-area, #complete-area { display: none; }
-        .progress { font-size: 1.1rem; color: #64748b; font-weight: bold; margin-bottom: 1rem; }
+        .progress { font-size: 1.1rem; color: var(--text-muted); font-weight: 600; margin-bottom: 1rem; }
         
         .equation-display {
             font-size: 4.5rem; font-weight: bold; margin: 2rem 0;
             min-height: 120px; display: flex; justify-content: center; align-items: center; gap: 15px;
+            color: var(--text);
         }
 
         /* Missing Variable / Answer styles */
@@ -129,16 +143,16 @@
         }
         .answer-passive.visible { opacity: 1; }
         .missing-box {
-            color: var(--gray); border-bottom: 4px solid var(--gray); padding: 0 10px;
+            color: var(--text-muted); border-bottom: 4px solid var(--text-muted); padding: 0 10px;
         }
 
-        /* Typed Input styles - WIDTH AND HEIGHT INCREASED HERE */
+        /* Typed Input styles */
         input.answer-input {
             width: 150px; height: 100px; font-size: 4rem; font-weight: bold;
             text-align: center; color: var(--primary); background: transparent;
             border: 4px solid var(--primary); border-radius: 12px; outline: none;
         }
-        input.answer-input:focus { border-color: var(--primary-hover); box-shadow: 0 0 10px rgba(37, 99, 235, 0.3); }
+        input.answer-input:focus { border-color: var(--primary-hover); box-shadow: 0 0 15px rgba(129, 140, 248, 0.2); }
         input.answer-input.error {
             border-color: var(--danger); color: var(--danger); animation: shake 0.4s;
         }
@@ -146,19 +160,21 @@
 
         /* Review List Styles */
         .review-container {
-            background: #f1f5f9;
+            background: var(--card-bg-alt);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 2rem;
             text-align: left;
             max-height: 250px;
             overflow-y: auto;
+            border: 1px solid var(--gray);
         }
         
         .review-container h3 {
             margin-top: 0;
-            color: var(--warning-hover);
+            color: var(--warning);
             margin-bottom: 10px;
+            font-size: 1.1rem;
         }
 
         .review-list {
@@ -166,6 +182,7 @@
             padding-left: 25px;
             font-size: 1.2rem;
             font-weight: 500;
+            color: var(--text);
         }
 
         .review-list li {
@@ -187,8 +204,8 @@
     <div class="container" id="menu-area">
         <h1>Times Table Practice</h1>
         
-        <div class="settings-group" style="background: transparent; padding: 0;">
-            <label class="title">Select Tables (2-9):</label>
+        <div class="settings-group" style="background: transparent; padding: 0; border: none;">
+            <label class="title" style="color: var(--text-muted);">Select Tables (2-9):</label>
             <div class="number-grid">
                 <label class="checkbox-btn"><input type="checkbox" value="2" class="table-cb"><span>2</span></label>
                 <label class="checkbox-btn"><input type="checkbox" value="3" class="table-cb"><span>3</span></label>
@@ -203,13 +220,13 @@
 
         <div class="settings-row">
             <div class="settings-group">
-                <label class="title">Order:</label>
+                <label class="title">Order</label>
                 <label class="radio-option"><input type="radio" name="order" value="random" checked> Random</label>
                 <label class="radio-option"><input type="radio" name="order" value="inorder"> In-Order</label>
             </div>
             
             <div class="settings-group">
-                <label class="title">Interaction Mode:</label>
+                <label class="title">Interaction Mode</label>
                 <label class="radio-option"><input type="radio" name="interaction" value="typed" onchange="toggleDuration()" checked> Type the Answer</label>
                 <label class="radio-option"><input type="radio" name="interaction" value="passive" onchange="toggleDuration()"> Watch & Wait</label>
             </div>
@@ -217,7 +234,7 @@
 
         <div class="settings-row">
             <div class="settings-group" style="flex: 100%;">
-                <label class="radio-option" style="font-weight: bold; margin: 0;">
+                <label class="radio-option" style="font-weight: 600; margin: 0;">
                     <input type="checkbox" id="missing-var"> Enable Missing Variables (e.g. 6 &times; ? = 42)
                 </label>
             </div>
@@ -255,7 +272,7 @@
     <!-- COMPLETE AREA -->
     <div class="container" id="complete-area">
         <h1>Practice Complete!</h1>
-        <p style="font-size: 1.2rem; margin-bottom: 1.5rem; color: #64748b;">Great job! You finished the set.</p>
+        <p style="font-size: 1.2rem; margin-bottom: 1.5rem; color: var(--text-muted);">Great job! You finished the set.</p>
         
         <div id="review-section" class="review-container" style="display: none;">
             <h3>Flagged for Review:</h3>
