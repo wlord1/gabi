@@ -144,6 +144,34 @@
         }
         input.answer-input.success { border-color: var(--secondary); color: var(--secondary); }
 
+        /* Review List Styles */
+        .review-container {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 2rem;
+            text-align: left;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        
+        .review-container h3 {
+            margin-top: 0;
+            color: var(--warning-hover);
+            margin-bottom: 10px;
+        }
+
+        .review-list {
+            margin: 0;
+            padding-left: 25px;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .review-list li {
+            margin-bottom: 8px;
+        }
+
         @keyframes shake {
             0% { transform: translateX(0); }
             25% { transform: translateX(-10px); }
@@ -227,7 +255,15 @@
     <!-- COMPLETE AREA -->
     <div class="container" id="complete-area">
         <h1>Practice Complete!</h1>
-        <p style="font-size: 1.2rem; margin-bottom: 2rem; color: #64748b;">Great job! You mastered the set.</p>
+        <p style="font-size: 1.2rem; margin-bottom: 1.5rem; color: #64748b;">Great job! You finished the set.</p>
+        
+        <div id="review-section" class="review-container" style="display: none;">
+            <h3>Flagged for Review:</h3>
+            <ul class="review-list" id="review-list-items">
+                <!-- Flagged items injected here -->
+            </ul>
+        </div>
+
         <button onclick="returnToMenu()">Return to Menu</button>
     </div>
 
@@ -242,7 +278,6 @@
         let setSize = 0;
         let durationMs = 4000;
         let currentExpectedAnswer = 0;
-        let isReviewPhase = false;
 
         // Settings variables
         let isRandom = true;
@@ -271,7 +306,6 @@
         function startPractice(isMinimumMode) {
             let baseSet = [];
             reviewQueue = [];
-            isReviewPhase = false;
 
             // Get user settings
             isRandom = document.querySelector('input[name="order"]:checked').value === 'random';
@@ -338,35 +372,21 @@
             flagBtn.disabled = false;
             flagBtn.innerText = "Flag for Review";
 
-            // Check if we reached the end of the current list
+            // Check if we reached the end of the list
             if (currentIndex >= practiceList.length) {
-                if (reviewQueue.length > 0) {
-                    // Enter review phase
-                    practiceList = [...reviewQueue];
-                    reviewQueue = [];
-                    currentIndex = 0;
-                    isReviewPhase = true;
-                    setSize = practiceList.length;
-                    if (isRandom) shuffleArray(practiceList);
-                } else {
-                    finishPractice();
-                    return;
-                }
+                finishPractice();
+                return;
             }
 
             const currentProblem = practiceList[currentIndex];
-            currentProblem.flagged = false; // Reset flag state
+            currentProblem.flagged = false;
 
-            if (isReviewPhase) {
-                document.getElementById('progress-text').innerText = `Review Pile | Problem ${currentIndex + 1}/${setSize}`;
-            } else {
-                currentCycle = Math.floor(currentIndex / setSize) + 1;
-                let problemInCycle = (currentIndex % setSize) + 1;
-                document.getElementById('progress-text').innerText = `Cycle ${currentCycle}/${totalCycles} | Problem ${problemInCycle}/${setSize}`;
-            }
+            currentCycle = Math.floor(currentIndex / setSize) + 1;
+            let problemInCycle = (currentIndex % setSize) + 1;
+            document.getElementById('progress-text').innerText = `Cycle ${currentCycle}/${totalCycles} | Problem ${problemInCycle}/${setSize}`;
 
             // Determine display format (Missing Var logic)
-            // 0 = Standard (Find Ans), 1 = Missing A, 2 = Missing B
+            // 0 = Standard, 1 = Missing A, 2 = Missing B
             let problemFormat = 0;
             if (useMissingVar) {
                 problemFormat = Math.floor(Math.random() * 3);
@@ -402,7 +422,7 @@
                 });
 
             } else {
-                // Passive Mode (Watch & Wait)
+                // Passive Mode
                 if (problemFormat === 1) {
                     html = `<span class="answer-passive" id="ans-text">${currentProblem.a}</span> <span class="missing-box" id="q-box">?</span> &times; ${currentProblem.b} = ${currentProblem.ans}`;
                 } else if (problemFormat === 2) {
@@ -416,12 +436,12 @@
                 timerId = setTimeout(() => {
                     document.getElementById('ans-text').classList.add('visible');
                     const qBox = document.getElementById('q-box');
-                    if(qBox) qBox.style.display = 'none'; // Hide the '?' if it was missing var
+                    if(qBox) qBox.style.display = 'none';
                     
                     timerId2 = setTimeout(() => {
                         currentIndex++;
                         runNextQuestion();
-                    }, 2000); // Give 2 seconds to view the answer
+                    }, 2000); 
                 }, durationMs);
             }
         }
@@ -433,15 +453,14 @@
             if (userVal === currentExpectedAnswer) {
                 inputEl.classList.remove('error');
                 inputEl.classList.add('success');
-                inputEl.disabled = true; // prevent double hitting enter
+                inputEl.disabled = true; 
                 
                 setTimeout(() => {
                     currentIndex++;
                     runNextQuestion();
-                }, 400); // Quick transition when correct
+                }, 400); 
             } else {
                 inputEl.classList.add('error');
-                // Auto-flag on wrong answer (optional, but helpful for typed mode)
                 flagCurrentProblem();
                 
                 setTimeout(() => {
@@ -456,7 +475,11 @@
             const currentProblem = practiceList[currentIndex];
             if (!currentProblem.flagged) {
                 currentProblem.flagged = true;
-                reviewQueue.push({...currentProblem}); // Clone it into review queue
+                // Add to review queue, ensuring no duplicates in the visual list if the exact same problem is flagged multiple times across cycles
+                const problemString = `${currentProblem.a} &times; ${currentProblem.b} = ${currentProblem.ans}`;
+                if (!reviewQueue.includes(problemString)) {
+                    reviewQueue.push(problemString); 
+                }
                 
                 const flagBtn = document.getElementById('flag-btn');
                 flagBtn.innerText = "Flagged!";
@@ -467,6 +490,21 @@
         function finishPractice() {
             clearTimeout(timerId);
             clearTimeout(timerId2);
+            
+            const reviewSection = document.getElementById('review-section');
+            const reviewListItems = document.getElementById('review-list-items');
+            
+            if (reviewQueue.length > 0) {
+                reviewSection.style.display = 'block';
+                let listHtml = '';
+                reviewQueue.forEach(probStr => {
+                    listHtml += `<li>${probStr}</li>`;
+                });
+                reviewListItems.innerHTML = listHtml;
+            } else {
+                reviewSection.style.display = 'none';
+            }
+
             document.getElementById('practice-area').style.display = 'none';
             document.getElementById('complete-area').style.display = 'block';
         }
