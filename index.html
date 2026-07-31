@@ -135,19 +135,48 @@
             letter-spacing: 0.5px;
         }
         
+        /* Fixed Width Equation Slots to Prevent Jumping */
         .equation-display {
             font-size: 4.5rem; font-weight: bold; margin: 2rem 0;
-            min-height: 120px; display: flex; justify-content: center; align-items: center; gap: 15px;
+            min-height: 120px; 
+            display: flex; justify-content: center; align-items: center; 
             color: var(--text);
         }
+        
+        .eq-slot {
+            width: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-        /* Missing Variable / Answer styles */
+        .eq-op {
+            width: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-muted);
+        }
+
+        /* Passive Container styles */
+        .passive-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100px;
+        }
+
         .answer-passive {
             color: var(--secondary); opacity: 0; transition: opacity 0.2s;
+            position: absolute;
         }
         .answer-passive.visible { opacity: 1; }
+        
         .missing-box {
             color: var(--text-muted); border-bottom: 4px solid var(--text-muted); padding: 0 10px;
+            position: absolute;
         }
 
         /* Typed Input styles */
@@ -236,7 +265,9 @@
         @media (max-width: 550px) {
             .stats-grid { grid-template-columns: 1fr; }
             .equation-display { font-size: 3.5rem; }
-            input.answer-input { font-size: 3rem; width: 120px; height: 80px; }
+            input.answer-input { font-size: 3rem; width: 100px; height: 80px; }
+            .eq-slot { width: 100px; }
+            .eq-op { width: 30px; }
         }
     </style>
 </head>
@@ -371,7 +402,6 @@
             if (isPassive) {
                 durationLabel.innerText = "Wait Duration (Secs):";
                 durationInput.min = 1;
-                // If they had 0 (infinite) set, bump it to 3 automatically so it doesn't freeze
                 if (parseInt(durationInput.value) === 0) {
                     durationInput.value = 3;
                 }
@@ -408,7 +438,7 @@
             
             // Constrain limits
             if (isTyped && seconds < 0) seconds = 0;
-            if (!isTyped && seconds < 1) seconds = 3; // Fallback just in case for passive mode
+            if (!isTyped && seconds < 1) seconds = 3; 
             if (seconds > 60) seconds = 60;
             if (totalCycles < 1) totalCycles = 1;
             
@@ -477,31 +507,46 @@
             // Start timer for average speed tracking
             questionStartTime = Date.now();
 
-            // Determine display format (Missing Var logic)
+            // Determine display format 
+            // 0 = Standard, 1 = Missing A, 2 = Missing B
             let problemFormat = 0;
             if (useMissingVar) {
-                problemFormat = Math.floor(Math.random() * 3);
+                // If Missing Var is ON, only pick 1 or 2 (Never 0)
+                problemFormat = Math.floor(Math.random() * 2) + 1;
             }
 
             const display = document.getElementById('equation-display');
-            let html = "";
+            let slot1 = "", slot2 = "", slot3 = "";
 
             if (isTyped) {
                 // Typed Input Mode
                 let inputHtml = `<input type="number" class="answer-input" id="user-input" autocomplete="off">`;
                 
                 if (problemFormat === 1) {
-                    html = `${inputHtml} &times; ${currentProblem.b} = ${currentProblem.ans}`;
+                    slot1 = inputHtml;
+                    slot2 = currentProblem.b;
+                    slot3 = currentProblem.ans;
                     currentExpectedAnswer = currentProblem.a;
                 } else if (problemFormat === 2) {
-                    html = `${currentProblem.a} &times; ${inputHtml} = ${currentProblem.ans}`;
+                    slot1 = currentProblem.a;
+                    slot2 = inputHtml;
+                    slot3 = currentProblem.ans;
                     currentExpectedAnswer = currentProblem.b;
                 } else {
-                    html = `${currentProblem.a} &times; ${currentProblem.b} = ${inputHtml}`;
+                    slot1 = currentProblem.a;
+                    slot2 = currentProblem.b;
+                    slot3 = inputHtml;
                     currentExpectedAnswer = currentProblem.ans;
                 }
                 
-                display.innerHTML = html;
+                display.innerHTML = `
+                    <div class="eq-slot">${slot1}</div>
+                    <div class="eq-op">&times;</div>
+                    <div class="eq-slot">${slot2}</div>
+                    <div class="eq-op">=</div>
+                    <div class="eq-slot">${slot3}</div>
+                `;
+
                 const inputEl = document.getElementById('user-input');
                 inputEl.focus();
                 
@@ -523,7 +568,7 @@
                             setTimeout(() => {
                                 currentIndex++;
                                 runNextQuestion();
-                            }, 1500); // Wait briefly so they can see the right answer before moving on
+                            }, 1500); 
                         }
                     }, durationMs);
                 }
@@ -531,14 +576,26 @@
             } else {
                 // Passive Mode (Watch & Wait)
                 if (problemFormat === 1) {
-                    html = `<span class="answer-passive" id="ans-text">${currentProblem.a}</span> <span class="missing-box" id="q-box">?</span> &times; ${currentProblem.b} = ${currentProblem.ans}`;
+                    slot1 = `<div class="passive-container"><span class="answer-passive" id="ans-text">${currentProblem.a}</span><span class="missing-box" id="q-box">?</span></div>`;
+                    slot2 = currentProblem.b;
+                    slot3 = currentProblem.ans;
                 } else if (problemFormat === 2) {
-                    html = `${currentProblem.a} &times; <span class="answer-passive" id="ans-text">${currentProblem.b}</span> <span class="missing-box" id="q-box">?</span> = ${currentProblem.ans}`;
+                    slot1 = currentProblem.a;
+                    slot2 = `<div class="passive-container"><span class="answer-passive" id="ans-text">${currentProblem.b}</span><span class="missing-box" id="q-box">?</span></div>`;
+                    slot3 = currentProblem.ans;
                 } else {
-                    html = `${currentProblem.a} &times; ${currentProblem.b} = <span class="answer-passive" id="ans-text">${currentProblem.ans}</span>`;
+                    slot1 = currentProblem.a;
+                    slot2 = currentProblem.b;
+                    slot3 = `<div class="passive-container"><span class="answer-passive" id="ans-text">${currentProblem.ans}</span></div>`;
                 }
                 
-                display.innerHTML = html;
+                display.innerHTML = `
+                    <div class="eq-slot">${slot1}</div>
+                    <div class="eq-op">&times;</div>
+                    <div class="eq-slot">${slot2}</div>
+                    <div class="eq-op">=</div>
+                    <div class="eq-slot">${slot3}</div>
+                `;
                 
                 timerId = setTimeout(() => {
                     document.getElementById('ans-text').classList.add('visible');
