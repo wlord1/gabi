@@ -127,22 +127,12 @@
         /* Practice Area Styles */
         #practice-area, #complete-area { display: none; }
         
-        /* Animated Progress Bar */
-        .progress-bar-container {
-            width: 100%;
-            height: 12px;
-            background-color: var(--card-bg-alt);
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            overflow: hidden;
-            border: 1px solid var(--gray);
-        }
-        .progress-bar {
-            height: 100%;
-            width: 0%;
-            background-color: var(--primary);
-            transition: width 0.4s ease-out;
-            border-radius: 8px;
+        .progress { 
+            font-size: 1.2rem; 
+            color: var(--text-muted); 
+            font-weight: 600; 
+            margin-bottom: 1rem;
+            letter-spacing: 0.5px;
         }
         
         .equation-display {
@@ -279,8 +269,8 @@
             
             <div class="settings-group">
                 <label class="title">Interaction Mode</label>
-                <label class="radio-option"><input type="radio" name="interaction" value="typed" checked> Type the Answer</label>
-                <label class="radio-option"><input type="radio" name="interaction" value="passive"> Watch & Wait</label>
+                <label class="radio-option"><input type="radio" name="interaction" value="typed" onchange="toggleInteraction()" checked> Type the Answer</label>
+                <label class="radio-option"><input type="radio" name="interaction" value="passive" onchange="toggleInteraction()"> Watch & Wait</label>
             </div>
         </div>
 
@@ -294,7 +284,7 @@
 
         <div class="controls">
             <div class="control-item">
-                <label for="duration">Timer (Secs, 0 = Infinite):</label>
+                <label for="duration" id="duration-label">Timer (Secs, 0 = Infinite):</label>
                 <input type="number" id="duration" min="0" max="15" value="0">
             </div>
             <div class="control-item">
@@ -309,9 +299,7 @@
 
     <!-- PRACTICE AREA -->
     <div class="container" id="practice-area">
-        <div class="progress-bar-container">
-            <div class="progress-bar" id="progress-bar"></div>
-        </div>
+        <div class="progress" id="progress-text">Problem 1 of 36</div>
         
         <div class="equation-display" id="equation-display">
             <!-- Dynamically injected based on settings -->
@@ -323,31 +311,33 @@
     <!-- COMPLETE AREA -->
     <div class="container" id="complete-area">
         <h1>Practice Complete!</h1>
-        <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0;">Session Report</p>
+        <p id="completion-subtitle" style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0;">Session Report</p>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="stat-time">0m 0s</div>
-                <div class="stat-label">Total Time</div>
+        <div id="stats-container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-time">0m 0s</div>
+                    <div class="stat-label">Total Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-accuracy">100%</div>
+                    <div class="stat-label">Accuracy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-avg-speed">-</div>
+                    <div class="stat-label">Avg Speed</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="stat-accuracy">100%</div>
-                <div class="stat-label">Accuracy</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="stat-avg-speed">-</div>
-                <div class="stat-label">Avg Speed</div>
+            
+            <div id="review-section" class="review-container" style="display: none;">
+                <h3>Needs More Work:</h3>
+                <ul class="review-list" id="review-list-items">
+                    <!-- Flagged items injected here -->
+                </ul>
             </div>
         </div>
-        
-        <div id="review-section" class="review-container" style="display: none;">
-            <h3>Needs More Work:</h3>
-            <ul class="review-list" id="review-list-items">
-                <!-- Flagged items injected here -->
-            </ul>
-        </div>
 
-        <button onclick="returnToMenu()">Return to Menu</button>
+        <button onclick="returnToMenu()" style="margin-top: 1rem;">Return to Menu</button>
     </div>
 
     <script>
@@ -373,6 +363,24 @@
         let typedQuestionCount = 0;
         let totalErrors = 0;
 
+        function toggleInteraction() {
+            const isPassive = document.querySelector('input[name="interaction"]:checked').value === 'passive';
+            const durationInput = document.getElementById('duration');
+            const durationLabel = document.getElementById('duration-label');
+            
+            if (isPassive) {
+                durationLabel.innerText = "Wait Duration (Secs):";
+                durationInput.min = 1;
+                // If they had 0 (infinite) set, bump it to 3 automatically so it doesn't freeze
+                if (parseInt(durationInput.value) === 0) {
+                    durationInput.value = 3;
+                }
+            } else {
+                durationLabel.innerText = "Timer (Secs, 0 = Infinite):";
+                durationInput.min = 0;
+            }
+        }
+
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -397,16 +405,14 @@
             
             totalCycles = parseInt(document.getElementById('cycles').value) || 1;
             let seconds = parseInt(document.getElementById('duration').value) || 0;
-            if (seconds < 0) seconds = 0;
+            
+            // Constrain limits
+            if (isTyped && seconds < 0) seconds = 0;
+            if (!isTyped && seconds < 1) seconds = 3; // Fallback just in case for passive mode
             if (seconds > 60) seconds = 60;
             if (totalCycles < 1) totalCycles = 1;
             
             durationMs = seconds * 1000;
-            
-            // If they chose infinite (0) but are in passive mode, default to 4 seconds so it isn't broken
-            if (!isTyped && durationMs === 0) {
-                durationMs = 4000;
-            }
 
             if (isMinimumMode) {
                 for (let i = 2; i <= 9; i++) {
@@ -444,7 +450,6 @@
             }
 
             currentIndex = 0;
-            document.getElementById('progress-bar').style.width = '0%';
             
             document.getElementById('menu-area').style.display = 'none';
             document.getElementById('complete-area').style.display = 'none';
@@ -457,10 +462,8 @@
             clearTimeout(timerId);
             clearTimeout(timerId2);
 
-            // Calculate progress visually
             const totalQuestionsInSession = setSize * totalCycles;
-            const progressPercent = (currentIndex / totalQuestionsInSession) * 100;
-            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+            document.getElementById('progress-text').innerText = `Problem ${currentIndex + 1} of ${totalQuestionsInSession}`;
 
             // Check if we reached the end of the list
             if (currentIndex >= practiceList.length) {
@@ -625,44 +628,54 @@
             clearTimeout(timerId);
             clearTimeout(timerId2);
             
-            // Set Progress Bar to 100%
-            document.getElementById('progress-bar').style.width = '100%';
+            const statsContainer = document.getElementById('stats-container');
+            const completionSubtitle = document.getElementById('completion-subtitle');
 
-            // Populate Stats
-            const totalTimeMs = Date.now() - sessionStartTime;
-            const totalSeconds = Math.floor(totalTimeMs / 1000);
-            const mins = Math.floor(totalSeconds / 60);
-            const secs = totalSeconds % 60;
-            document.getElementById('stat-time').innerText = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-
-            const totalQ = setSize * totalCycles;
-            let accuracy = 100;
-            if (totalQ > 0) {
-                accuracy = Math.max(0, Math.round(((totalQ - totalErrors) / totalQ) * 100));
-            }
-            document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
-
-            if (isTyped && typedQuestionCount > 0) {
-                const avgMs = totalTypedTimeMs / typedQuestionCount;
-                const avgSecs = (avgMs / 1000).toFixed(1);
-                document.getElementById('stat-avg-speed').innerText = `${avgSecs}s`;
+            if (!isTyped) {
+                // Hide stats completely for Watch & Wait mode
+                statsContainer.style.display = 'none';
+                completionSubtitle.style.display = 'none';
             } else {
-                document.getElementById('stat-avg-speed').innerText = `N/A`;
-            }
-            
-            // Populate Review Section
-            const reviewSection = document.getElementById('review-section');
-            const reviewListItems = document.getElementById('review-list-items');
-            
-            if (reviewQueue.length > 0) {
-                reviewSection.style.display = 'block';
-                let listHtml = '';
-                reviewQueue.forEach(probStr => {
-                    listHtml += `<li>${probStr}</li>`;
-                });
-                reviewListItems.innerHTML = listHtml;
-            } else {
-                reviewSection.style.display = 'none';
+                // Show stats for Typed mode
+                statsContainer.style.display = 'block';
+                completionSubtitle.style.display = 'block';
+
+                // Populate Stats
+                const totalTimeMs = Date.now() - sessionStartTime;
+                const totalSeconds = Math.floor(totalTimeMs / 1000);
+                const mins = Math.floor(totalSeconds / 60);
+                const secs = totalSeconds % 60;
+                document.getElementById('stat-time').innerText = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+                const totalQ = setSize * totalCycles;
+                let accuracy = 100;
+                if (totalQ > 0) {
+                    accuracy = Math.max(0, Math.round(((totalQ - totalErrors) / totalQ) * 100));
+                }
+                document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
+
+                if (typedQuestionCount > 0) {
+                    const avgMs = totalTypedTimeMs / typedQuestionCount;
+                    const avgSecs = (avgMs / 1000).toFixed(1);
+                    document.getElementById('stat-avg-speed').innerText = `${avgSecs}s`;
+                } else {
+                    document.getElementById('stat-avg-speed').innerText = `N/A`;
+                }
+                
+                // Populate Review Section
+                const reviewSection = document.getElementById('review-section');
+                const reviewListItems = document.getElementById('review-list-items');
+                
+                if (reviewQueue.length > 0) {
+                    reviewSection.style.display = 'block';
+                    let listHtml = '';
+                    reviewQueue.forEach(probStr => {
+                        listHtml += `<li>${probStr}</li>`;
+                    });
+                    reviewListItems.innerHTML = listHtml;
+                } else {
+                    reviewSection.style.display = 'none';
+                }
             }
 
             document.getElementById('practice-area').style.display = 'none';
@@ -676,6 +689,9 @@
             document.getElementById('complete-area').style.display = 'none';
             document.getElementById('menu-area').style.display = 'block';
         }
+
+        // Initialize display logic on load
+        toggleInteraction();
     </script>
 </body>
 </html>
