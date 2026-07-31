@@ -106,7 +106,14 @@
         .control-item { flex: 1; }
         .control-item label { font-weight: 600; display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.95rem;}
         
+        /* Remove arrows from number inputs globally */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
         input[type="number"] {
+            -moz-appearance: textfield;
             width: 100%; padding: 10px; font-size: 1.1rem;
             border: 2px solid var(--gray); border-radius: 8px; outline: none;
             background: var(--card-bg-alt); color: var(--text);
@@ -560,15 +567,24 @@
                 if (durationMs > 0) {
                     timerId = setTimeout(() => {
                         if (inputEl && !inputEl.disabled) {
-                            inputEl.disabled = true;
-                            inputEl.classList.add('error');
-                            inputEl.value = currentExpectedAnswer; // Show correct answer
-                            flagCurrentProblem();
+                            const userVal = parseInt(inputEl.value);
                             
-                            setTimeout(() => {
-                                currentIndex++;
-                                runNextQuestion();
-                            }, 1500); 
+                            // Check if the current value matches what we expected
+                            if (userVal === currentExpectedAnswer) {
+                                // Auto-enter correct answer
+                                checkTypedAnswer();
+                            } else {
+                                // Time ran out and it is empty or wrong
+                                inputEl.disabled = true;
+                                inputEl.classList.add('error');
+                                inputEl.value = currentExpectedAnswer; // Show correct answer
+                                flagCurrentProblem();
+                                
+                                setTimeout(() => {
+                                    currentIndex++;
+                                    runNextQuestion();
+                                }, 1500); 
+                            }
                         }
                     }, durationMs);
                 }
@@ -645,13 +661,19 @@
                         if (remainingTime > 0) {
                             timerId = setTimeout(() => {
                                 if (inputEl && !inputEl.disabled) {
-                                    inputEl.disabled = true;
-                                    inputEl.classList.add('error');
-                                    inputEl.value = currentExpectedAnswer;
-                                    setTimeout(() => {
-                                        currentIndex++;
-                                        runNextQuestion();
-                                    }, 1500);
+                                    // Timer expired on the retry attempt
+                                    const retryVal = parseInt(inputEl.value);
+                                    if (retryVal === currentExpectedAnswer) {
+                                        checkTypedAnswer();
+                                    } else {
+                                        inputEl.disabled = true;
+                                        inputEl.classList.add('error');
+                                        inputEl.value = currentExpectedAnswer;
+                                        setTimeout(() => {
+                                            currentIndex++;
+                                            runNextQuestion();
+                                        }, 1500);
+                                    }
                                 }
                             }, remainingTime);
                         } else {
