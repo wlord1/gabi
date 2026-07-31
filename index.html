@@ -7,19 +7,18 @@
     <style>
         :root {
             /* Pro Dark Mode Theme */
-            --primary: #818cf8; /* Calming bright indigo */
+            --primary: #818cf8;
             --primary-hover: #6366f1;
-            --secondary: #34d399; /* Sleek mint green for success */
+            --secondary: #34d399;
             --secondary-hover: #10b981;
             --warning: #fbbf24;
-            --warning-hover: #f59e0b;
             --danger: #f87171;
-            --bg: #0f172a; /* Deep slate background */
-            --card-bg: #1e293b; /* Slightly lighter slate for the main card */
-            --card-bg-alt: #334155; /* Secondary background for inner boxes */
-            --text: #f8fafc; /* Crisp off-white text */
-            --text-muted: #94a3b8; /* Subtle gray for secondary text */
-            --gray: #475569; /* Border color */
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --card-bg-alt: #334155;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --gray: #475569;
         }
 
         * {
@@ -123,13 +122,28 @@
         button.alt-btn { background-color: var(--card-bg-alt); color: var(--text); border: 1px solid var(--gray); }
         button.alt-btn:hover { background-color: var(--gray); }
         button.cancel-btn { background-color: var(--danger); margin-top: 2rem; width: auto; padding: 10px 20px; }
-        button.flag-btn { background-color: var(--warning); margin-top: 1rem; width: auto; padding: 10px 20px; color: #000; }
-        button.flag-btn:hover { background-color: var(--warning-hover); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* Practice Area Styles */
         #practice-area, #complete-area { display: none; }
-        .progress { font-size: 1.1rem; color: var(--text-muted); font-weight: 600; margin-bottom: 1rem; }
+        
+        /* Animated Progress Bar */
+        .progress-bar-container {
+            width: 100%;
+            height: 12px;
+            background-color: var(--card-bg-alt);
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            border: 1px solid var(--gray);
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--primary);
+            transition: width 0.4s ease-out;
+            border-radius: 8px;
+        }
         
         .equation-display {
             font-size: 4.5rem; font-weight: bold; margin: 2rem 0;
@@ -157,6 +171,38 @@
             border-color: var(--danger); color: var(--danger); animation: shake 0.4s;
         }
         input.answer-input.success { border-color: var(--secondary); color: var(--secondary); }
+
+        /* Stats Grid Styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .stat-card {
+            background: var(--card-bg-alt);
+            padding: 20px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--gray);
+            text-align: center;
+        }
+
+        .stat-card .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
 
         /* Review List Styles */
         .review-container {
@@ -196,6 +242,12 @@
             75% { transform: translateX(-10px); }
             100% { transform: translateX(0); }
         }
+
+        @media (max-width: 550px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .equation-display { font-size: 3.5rem; }
+            input.answer-input { font-size: 3rem; width: 120px; height: 80px; }
+        }
     </style>
 </head>
 <body>
@@ -227,8 +279,8 @@
             
             <div class="settings-group">
                 <label class="title">Interaction Mode</label>
-                <label class="radio-option"><input type="radio" name="interaction" value="typed" onchange="toggleDuration()" checked> Type the Answer</label>
-                <label class="radio-option"><input type="radio" name="interaction" value="passive" onchange="toggleDuration()"> Watch & Wait</label>
+                <label class="radio-option"><input type="radio" name="interaction" value="typed" checked> Type the Answer</label>
+                <label class="radio-option"><input type="radio" name="interaction" value="passive"> Watch & Wait</label>
             </div>
         </div>
 
@@ -241,9 +293,9 @@
         </div>
 
         <div class="controls">
-            <div class="control-item" id="duration-container" style="opacity: 0.5; pointer-events: none;">
-                <label for="duration">Wait Duration (Seconds):</label>
-                <input type="number" id="duration" min="1" max="10" value="4">
+            <div class="control-item">
+                <label for="duration">Timer (Secs, 0 = Infinite):</label>
+                <input type="number" id="duration" min="0" max="15" value="0">
             </div>
             <div class="control-item">
                 <label for="cycles">Number of Cycles:</label>
@@ -257,25 +309,39 @@
 
     <!-- PRACTICE AREA -->
     <div class="container" id="practice-area">
-        <div class="progress" id="progress-text">Cycle 1/1 | Problem 1/8</div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
         
         <div class="equation-display" id="equation-display">
             <!-- Dynamically injected based on settings -->
         </div>
 
-        <div>
-            <button class="flag-btn" id="flag-btn" onclick="flagCurrentProblem()">Flag for Review</button>
-        </div>
         <button class="cancel-btn" onclick="returnToMenu()">Stop & Return</button>
     </div>
 
     <!-- COMPLETE AREA -->
     <div class="container" id="complete-area">
         <h1>Practice Complete!</h1>
-        <p style="font-size: 1.2rem; margin-bottom: 1.5rem; color: var(--text-muted);">Great job! You finished the set.</p>
+        <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0;">Session Report</p>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-time">0m 0s</div>
+                <div class="stat-label">Total Time</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-accuracy">100%</div>
+                <div class="stat-label">Accuracy</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-avg-speed">-</div>
+                <div class="stat-label">Avg Speed</div>
+            </div>
+        </div>
         
         <div id="review-section" class="review-container" style="display: none;">
-            <h3>Flagged for Review:</h3>
+            <h3>Needs More Work:</h3>
             <ul class="review-list" id="review-list-items">
                 <!-- Flagged items injected here -->
             </ul>
@@ -291,9 +357,8 @@
         let timerId = null;
         let timerId2 = null;
         let totalCycles = 1;
-        let currentCycle = 1;
         let setSize = 0;
-        let durationMs = 4000;
+        let durationMs = 0;
         let currentExpectedAnswer = 0;
 
         // Settings variables
@@ -301,17 +366,12 @@
         let isTyped = true;
         let useMissingVar = false;
 
-        function toggleDuration() {
-            const isPassive = document.querySelector('input[name="interaction"]:checked').value === 'passive';
-            const durationDiv = document.getElementById('duration-container');
-            if (isPassive) {
-                durationDiv.style.opacity = '1';
-                durationDiv.style.pointerEvents = 'auto';
-            } else {
-                durationDiv.style.opacity = '0.5';
-                durationDiv.style.pointerEvents = 'none';
-            }
-        }
+        // Analytics tracking variables
+        let sessionStartTime = 0;
+        let questionStartTime = 0;
+        let totalTypedTimeMs = 0;
+        let typedQuestionCount = 0;
+        let totalErrors = 0;
 
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -324,22 +384,33 @@
             let baseSet = [];
             reviewQueue = [];
 
+            // Reset Analytics
+            sessionStartTime = Date.now();
+            totalTypedTimeMs = 0;
+            typedQuestionCount = 0;
+            totalErrors = 0;
+
             // Get user settings
             isRandom = document.querySelector('input[name="order"]:checked').value === 'random';
             isTyped = document.querySelector('input[name="interaction"]:checked').value === 'typed';
             useMissingVar = document.getElementById('missing-var').checked;
             
             totalCycles = parseInt(document.getElementById('cycles').value) || 1;
-            let seconds = parseInt(document.getElementById('duration').value) || 4;
-            if (seconds < 1) seconds = 1;
-            if (seconds > 10) seconds = 10;
+            let seconds = parseInt(document.getElementById('duration').value) || 0;
+            if (seconds < 0) seconds = 0;
+            if (seconds > 60) seconds = 60;
             if (totalCycles < 1) totalCycles = 1;
+            
             durationMs = seconds * 1000;
+            
+            // If they chose infinite (0) but are in passive mode, default to 4 seconds so it isn't broken
+            if (!isTyped && durationMs === 0) {
+                durationMs = 4000;
+            }
 
             if (isMinimumMode) {
                 for (let i = 2; i <= 9; i++) {
                     for (let j = i; j <= 9; j++) {
-                        // Keep order consistent initially if "In-Order", randomize visual swap if "Random"
                         if (isRandom && Math.random() > 0.5 && i !== j) {
                             baseSet.push({ a: j, b: i, ans: i * j });
                         } else {
@@ -373,6 +444,8 @@
             }
 
             currentIndex = 0;
+            document.getElementById('progress-bar').style.width = '0%';
+            
             document.getElementById('menu-area').style.display = 'none';
             document.getElementById('complete-area').style.display = 'none';
             document.getElementById('practice-area').style.display = 'block';
@@ -384,10 +457,10 @@
             clearTimeout(timerId);
             clearTimeout(timerId2);
 
-            // Reset Flag Button
-            const flagBtn = document.getElementById('flag-btn');
-            flagBtn.disabled = false;
-            flagBtn.innerText = "Flag for Review";
+            // Calculate progress visually
+            const totalQuestionsInSession = setSize * totalCycles;
+            const progressPercent = (currentIndex / totalQuestionsInSession) * 100;
+            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
 
             // Check if we reached the end of the list
             if (currentIndex >= practiceList.length) {
@@ -398,12 +471,10 @@
             const currentProblem = practiceList[currentIndex];
             currentProblem.flagged = false;
 
-            currentCycle = Math.floor(currentIndex / setSize) + 1;
-            let problemInCycle = (currentIndex % setSize) + 1;
-            document.getElementById('progress-text').innerText = `Cycle ${currentCycle}/${totalCycles} | Problem ${problemInCycle}/${setSize}`;
+            // Start timer for average speed tracking
+            questionStartTime = Date.now();
 
             // Determine display format (Missing Var logic)
-            // 0 = Standard, 1 = Missing A, 2 = Missing B
             let problemFormat = 0;
             if (useMissingVar) {
                 problemFormat = Math.floor(Math.random() * 3);
@@ -431,15 +502,31 @@
                 const inputEl = document.getElementById('user-input');
                 inputEl.focus();
                 
-                // Add event listener for Enter key
                 inputEl.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter') {
                         checkTypedAnswer();
                     }
                 });
 
+                // Set Timer if Duration is greater than 0
+                if (durationMs > 0) {
+                    timerId = setTimeout(() => {
+                        if (inputEl && !inputEl.disabled) {
+                            inputEl.disabled = true;
+                            inputEl.classList.add('error');
+                            inputEl.value = currentExpectedAnswer; // Show correct answer
+                            flagCurrentProblem();
+                            
+                            setTimeout(() => {
+                                currentIndex++;
+                                runNextQuestion();
+                            }, 1500); // Wait briefly so they can see the right answer before moving on
+                        }
+                    }, durationMs);
+                }
+
             } else {
-                // Passive Mode
+                // Passive Mode (Watch & Wait)
                 if (problemFormat === 1) {
                     html = `<span class="answer-passive" id="ans-text">${currentProblem.a}</span> <span class="missing-box" id="q-box">?</span> &times; ${currentProblem.b} = ${currentProblem.ans}`;
                 } else if (problemFormat === 2) {
@@ -464,10 +551,17 @@
         }
 
         function checkTypedAnswer() {
+            clearTimeout(timerId); // Stop the timeout since they entered an answer
+            
             const inputEl = document.getElementById('user-input');
             const userVal = parseInt(inputEl.value);
 
             if (userVal === currentExpectedAnswer) {
+                // Record speed data
+                const timeTaken = Date.now() - questionStartTime;
+                totalTypedTimeMs += timeTaken;
+                typedQuestionCount++;
+
                 inputEl.classList.remove('error');
                 inputEl.classList.add('success');
                 inputEl.disabled = true; 
@@ -478,12 +572,38 @@
                 }, 400); 
             } else {
                 inputEl.classList.add('error');
-                flagCurrentProblem();
+                flagCurrentProblem(); // Log it as wrong behind the scenes
                 
                 setTimeout(() => {
                     inputEl.classList.remove('error');
                     inputEl.value = '';
                     inputEl.focus();
+                    
+                    // Resume the timer if one existed
+                    if (durationMs > 0) {
+                        const remainingTime = durationMs - (Date.now() - questionStartTime);
+                        if (remainingTime > 0) {
+                            timerId = setTimeout(() => {
+                                if (inputEl && !inputEl.disabled) {
+                                    inputEl.disabled = true;
+                                    inputEl.classList.add('error');
+                                    inputEl.value = currentExpectedAnswer;
+                                    setTimeout(() => {
+                                        currentIndex++;
+                                        runNextQuestion();
+                                    }, 1500);
+                                }
+                            }, remainingTime);
+                        } else {
+                            // If they spent too long guessing and time is up, force next
+                            inputEl.disabled = true;
+                            inputEl.value = currentExpectedAnswer;
+                            setTimeout(() => {
+                                currentIndex++;
+                                runNextQuestion();
+                            }, 1500);
+                        }
+                    }
                 }, 500);
             }
         }
@@ -492,15 +612,12 @@
             const currentProblem = practiceList[currentIndex];
             if (!currentProblem.flagged) {
                 currentProblem.flagged = true;
-                // Add to review queue, ensuring no duplicates in the visual list if the exact same problem is flagged multiple times across cycles
+                totalErrors++; // Increment errors for accuracy calc
+                
                 const problemString = `${currentProblem.a} &times; ${currentProblem.b} = ${currentProblem.ans}`;
                 if (!reviewQueue.includes(problemString)) {
                     reviewQueue.push(problemString); 
                 }
-                
-                const flagBtn = document.getElementById('flag-btn');
-                flagBtn.innerText = "Flagged!";
-                flagBtn.disabled = true;
             }
         }
 
@@ -508,6 +625,32 @@
             clearTimeout(timerId);
             clearTimeout(timerId2);
             
+            // Set Progress Bar to 100%
+            document.getElementById('progress-bar').style.width = '100%';
+
+            // Populate Stats
+            const totalTimeMs = Date.now() - sessionStartTime;
+            const totalSeconds = Math.floor(totalTimeMs / 1000);
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            document.getElementById('stat-time').innerText = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+            const totalQ = setSize * totalCycles;
+            let accuracy = 100;
+            if (totalQ > 0) {
+                accuracy = Math.max(0, Math.round(((totalQ - totalErrors) / totalQ) * 100));
+            }
+            document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
+
+            if (isTyped && typedQuestionCount > 0) {
+                const avgMs = totalTypedTimeMs / typedQuestionCount;
+                const avgSecs = (avgMs / 1000).toFixed(1);
+                document.getElementById('stat-avg-speed').innerText = `${avgSecs}s`;
+            } else {
+                document.getElementById('stat-avg-speed').innerText = `N/A`;
+            }
+            
+            // Populate Review Section
             const reviewSection = document.getElementById('review-section');
             const reviewListItems = document.getElementById('review-list-items');
             
@@ -533,9 +676,6 @@
             document.getElementById('complete-area').style.display = 'none';
             document.getElementById('menu-area').style.display = 'block';
         }
-
-        // Initialize display logic on load
-        toggleDuration();
     </script>
 </body>
 </html>
