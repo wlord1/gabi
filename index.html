@@ -20,6 +20,8 @@
             --text-muted: #94a3b8;
             --gray: #475569;
             --dodger-blue: #005A9C;
+            --padres-brown: #2F241D;
+            --padres-gold: #FFC425;
         }
 
         * {
@@ -264,6 +266,9 @@
             border-radius: 12px;
             border: 2px dashed var(--danger);
             margin: 2rem 0;
+            position: relative;
+            min-height: 400px; /* Gives the runaway button room to jump */
+            overflow: hidden;
         }
         
         #troll-captcha h2 { color: var(--danger); margin-top: 0; }
@@ -277,6 +282,15 @@
             background: #ffffff;
             padding: 10px;
             border-radius: 8px;
+        }
+
+        #runaway-btn {
+            background-color: var(--padres-brown);
+            color: var(--padres-gold);
+            border: 2px solid var(--padres-gold);
+            margin-top: 15px;
+            transition: top 0.1s, left 0.1s; /* Makes the jump slightly visible */
+            z-index: 10;
         }
 
         @keyframes shake {
@@ -374,9 +388,16 @@
             <h2>Security Verification Required</h2>
             <p>To verify you are a human (and not a bitter Padres fan), you must type the exact phrase below to unlock your results:</p>
             <div class="troll-phrase">Dodgers Rule, Jackson Merrill Sux</div>
-            <input type="text" id="troll-input" autocomplete="off" placeholder="Type it out, don't be shy..." style="text-align: center; font-size: 1.2rem; padding: 15px; margin-bottom: 10px;">
+            
+            <!-- iOS-proof attributes added here -->
+            <input type="text" id="troll-input" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Type it out, don't be shy..." style="text-align: center; font-size: 1.2rem; padding: 15px; margin-bottom: 10px; width: 100%;">
+            
             <p id="troll-error-msg" style="color: var(--danger); font-weight: bold; margin-top: 0; display: none;">Nice try. Type it exactly.</p>
-            <button onclick="verifyTrollCaptcha()" style="background-color: var(--dodger-blue); margin-top: 10px;">Submit to the Dodgers</button>
+            
+            <button id="submit-dodgers-btn" onclick="verifyTrollCaptcha()" style="background-color: var(--dodger-blue); margin-top: 10px;">Submit to the Dodgers</button>
+            
+            <!-- The Coward's Way Out Button -->
+            <button id="runaway-btn">No! I love the Padres!</button>
         </div>
 
         <!-- ACTUAL STATS (Hidden behind the troll tollbooth) -->
@@ -716,26 +737,79 @@
             }
 
             // Lock them in the Troll Tollbooth
-            document.getElementById('troll-input').value = "";
-            document.getElementById('troll-input').classList.remove('error');
+            const trollInput = document.getElementById('troll-input');
+            trollInput.value = "";
+            trollInput.classList.remove('error');
+            
+            // Reset runaway button position
+            const runawayBtn = document.getElementById('runaway-btn');
+            runawayBtn.style.position = 'static';
+            runawayBtn.style.marginTop = '15px';
+            
             document.getElementById('troll-error-msg').style.display = 'none';
             document.getElementById('stats-wrapper').style.display = 'none';
             document.getElementById('completion-subtitle').style.display = 'none';
             
             if (isTyped) {
                 document.getElementById('troll-captcha').style.display = 'block';
-                document.getElementById('troll-input').focus();
+                trollInput.focus();
             } else {
-                // If they did passive mode, skip the captcha, just show return button
                 document.getElementById('stats-wrapper').style.display = 'block';
                 document.getElementById('stats-container').style.display = 'none';
             }
-            
-            // Listen for enter key on the captcha
-            document.getElementById('troll-input').addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') verifyTrollCaptcha();
-            });
         }
+
+        // TROLL EVENT LISTENERS (Moved outside to prevent duplicate firing)
+
+        // 1. Gaslight Keyboard Listener
+        document.getElementById('troll-input').addEventListener('input', function(e) {
+            const targetPhrase = "Dodgers Rule, Jackson Merrill Sux";
+            let currentLength = this.value.length;
+
+            // Prevent array out of bounds if they somehow paste a giant string
+            if (currentLength > targetPhrase.length) {
+                currentLength = targetPhrase.length;
+            }
+
+            // Forcefully overwrite whatever they typed with the correct letters
+            this.value = targetPhrase.substring(0, currentLength);
+
+            // Auto-verify when finished so they don't even have to press submit
+            if (this.value === targetPhrase) {
+                setTimeout(verifyTrollCaptcha, 300);
+            }
+        });
+
+        // Enter key fallback
+        document.getElementById('troll-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') verifyTrollCaptcha();
+        });
+
+        // 2. The Coward's Way Out Listener (Teleporting Button)
+        const runawayBtn = document.getElementById('runaway-btn');
+        
+        const moveButton = (e) => {
+            e.preventDefault(); // Stop them from actually clicking it on mobile
+            
+            const container = document.getElementById('troll-captcha');
+            const containerRect = container.getBoundingClientRect();
+            const btnRect = runawayBtn.getBoundingClientRect();
+
+            // Calculate safe boundaries so it doesn't jump out of the box
+            const maxX = containerRect.width - btnRect.width - 20;
+            const maxY = containerRect.height - btnRect.height - 20;
+
+            const randomX = Math.max(10, Math.floor(Math.random() * maxX));
+            const randomY = Math.max(10, Math.floor(Math.random() * maxY));
+
+            runawayBtn.style.position = 'absolute';
+            runawayBtn.style.left = randomX + 'px';
+            runawayBtn.style.top = randomY + 'px';
+        };
+
+        // Triggers on mouse hover (desktop) or touch (mobile)
+        runawayBtn.addEventListener('mouseover', moveButton);
+        runawayBtn.addEventListener('touchstart', moveButton);
 
         // TROLL VERIFICATION
         function verifyTrollCaptcha() {
@@ -744,15 +818,12 @@
             const targetText = "dodgers rule, jackson merrill sux";
 
             if (userText === targetText) {
-                // VICTORY - THE TROLL IS COMPLETE
                 document.getElementById('troll-captcha').style.display = 'none';
                 document.getElementById('stats-wrapper').style.display = 'block';
                 document.getElementById('completion-subtitle').style.display = 'block';
                 
-                // Flood the background Dodger Blue
                 document.body.style.backgroundColor = 'var(--dodger-blue)';
                 
-                // Hijack the accuracy rating
                 let fakeAccuracy = baseAccuracy + 50;
                 document.getElementById('stat-accuracy').innerHTML = `
                     <span style="text-decoration: line-through; font-size: 1.2rem; color: var(--danger);">${baseAccuracy}%</span>
@@ -764,7 +835,6 @@
                     <span style="color: var(--warning); font-weight: bold; font-size: 1.2rem;">(+50% Dodger Fan Bonus Applied)</span>
                 `;
             } else {
-                // THEY REFUSED. PUNISH THEM.
                 inputEl.classList.add('error');
                 document.getElementById('troll-error-msg').style.display = 'block';
                 
@@ -777,7 +847,7 @@
         function returnToMenu() {
             clearTimeout(timerId);
             clearTimeout(timerId2);
-            document.body.style.backgroundColor = 'var(--bg)'; // Reset the blue-out
+            document.body.style.backgroundColor = 'var(--bg)'; 
             document.getElementById('practice-area').style.display = 'none';
             document.getElementById('complete-area').style.display = 'none';
             document.getElementById('menu-area').style.display = 'block';
