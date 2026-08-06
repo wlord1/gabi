@@ -19,6 +19,7 @@
             --text: #f8fafc;
             --text-muted: #94a3b8;
             --gray: #475569;
+            --dodger-blue: #005A9C;
         }
 
         * {
@@ -35,6 +36,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            transition: background-color 0.5s ease;
         }
 
         .container {
@@ -112,13 +114,13 @@
             -webkit-appearance: none;
             margin: 0;
         }
-        input[type="number"] {
+        input[type="number"], input[type="text"] {
             -moz-appearance: textfield;
             width: 100%; padding: 10px; font-size: 1.1rem;
             border: 2px solid var(--gray); border-radius: 8px; outline: none;
             background: var(--card-bg-alt); color: var(--text);
         }
-        input[type="number"]:focus { border-color: var(--primary); }
+        input[type="number"]:focus, input[type="text"]:focus { border-color: var(--primary); }
 
         button {
             width: 100%; padding: 15px; font-size: 1.1rem; font-weight: bold;
@@ -142,7 +144,6 @@
             letter-spacing: 0.5px;
         }
         
-        /* Fixed Width Equation Slots to Prevent Jumping */
         .equation-display {
             font-size: 4.5rem; font-weight: bold; margin: 2rem 0;
             min-height: 120px; 
@@ -165,7 +166,6 @@
             color: var(--text-muted);
         }
 
-        /* Passive Container styles */
         .passive-container {
             position: relative;
             display: flex;
@@ -186,19 +186,19 @@
             position: absolute;
         }
 
-        /* Typed Input styles */
         input.answer-input {
             width: 150px; height: 100px; font-size: 4rem; font-weight: bold;
             text-align: center; color: var(--primary); background: transparent;
             border: 4px solid var(--primary); border-radius: 12px; outline: none;
         }
         input.answer-input:focus { border-color: var(--primary-hover); box-shadow: 0 0 15px rgba(129, 140, 248, 0.2); }
-        input.answer-input.error {
-            border-color: var(--danger); color: var(--danger); animation: shake 0.4s;
+        
+        /* Shake error animation reused for the troll captcha */
+        .error {
+            border-color: var(--danger) !important; color: var(--danger) !important; animation: shake 0.4s;
         }
         input.answer-input.success { border-color: var(--secondary); color: var(--secondary); }
 
-        /* Stats Grid Styles */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -230,7 +230,6 @@
             font-weight: 600;
         }
 
-        /* Review List Styles */
         .review-container {
             background: var(--card-bg-alt);
             border-radius: 12px;
@@ -256,9 +255,28 @@
             font-weight: 500;
             color: var(--text);
         }
+        .review-list li { margin-bottom: 8px; }
 
-        .review-list li {
-            margin-bottom: 8px;
+        /* Troll Specific Styles */
+        #troll-captcha {
+            background: var(--card-bg-alt);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 2px dashed var(--danger);
+            margin: 2rem 0;
+        }
+        
+        #troll-captcha h2 { color: var(--danger); margin-top: 0; }
+        
+        .troll-phrase {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--dodger-blue);
+            letter-spacing: 1px;
+            margin: 1.5rem 0;
+            background: #ffffff;
+            padding: 10px;
+            border-radius: 8px;
         }
 
         @keyframes shake {
@@ -351,31 +369,44 @@
         <h1>Practice Complete!</h1>
         <p id="completion-subtitle" style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0;">Session Report</p>
 
-        <div id="stats-container">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-time">0m 0s</div>
-                    <div class="stat-label">Total Time</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-accuracy">100%</div>
-                    <div class="stat-label">Accuracy</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-avg-speed">-</div>
-                    <div class="stat-label">Avg Speed</div>
-                </div>
-            </div>
-            
-            <div id="review-section" class="review-container" style="display: none;">
-                <h3>Needs More Work:</h3>
-                <ul class="review-list" id="review-list-items">
-                    <!-- Flagged items injected here -->
-                </ul>
-            </div>
+        <!-- DIABOLICAL TROLL CAPTCHA -->
+        <div id="troll-captcha" style="display: none;">
+            <h2>Security Verification Required</h2>
+            <p>To verify you are a human (and not a bitter Padres fan), you must type the exact phrase below to unlock your results:</p>
+            <div class="troll-phrase">Dodgers Rule, Jackson Merrill Sux</div>
+            <input type="text" id="troll-input" autocomplete="off" placeholder="Type it out, don't be shy..." style="text-align: center; font-size: 1.2rem; padding: 15px; margin-bottom: 10px;">
+            <p id="troll-error-msg" style="color: var(--danger); font-weight: bold; margin-top: 0; display: none;">Nice try. Type it exactly.</p>
+            <button onclick="verifyTrollCaptcha()" style="background-color: var(--dodger-blue); margin-top: 10px;">Submit to the Dodgers</button>
         </div>
 
-        <button onclick="returnToMenu()" style="margin-top: 1rem;">Return to Menu</button>
+        <!-- ACTUAL STATS (Hidden behind the troll tollbooth) -->
+        <div id="stats-wrapper">
+            <div id="stats-container">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-time">0m 0s</div>
+                        <div class="stat-label">Total Time</div>
+                    </div>
+                    <div class="stat-card" id="accuracy-card">
+                        <div class="stat-value" id="stat-accuracy">100%</div>
+                        <div class="stat-label">Accuracy</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-avg-speed">-</div>
+                        <div class="stat-label">Avg Speed</div>
+                    </div>
+                </div>
+                
+                <div id="review-section" class="review-container" style="display: none;">
+                    <h3>Needs More Work (Besides the Padres' Roster):</h3>
+                    <ul class="review-list" id="review-list-items">
+                        <!-- Flagged items injected here -->
+                    </ul>
+                </div>
+            </div>
+
+            <button id="return-btn" onclick="returnToMenu()" style="margin-top: 1rem;">Return to Menu</button>
+        </div>
     </div>
 
     <script>
@@ -400,6 +431,7 @@
         let totalTypedTimeMs = 0;
         let typedQuestionCount = 0;
         let totalErrors = 0;
+        let baseAccuracy = 100;
 
         function toggleInteraction() {
             const isPassive = document.querySelector('input[name="interaction"]:checked').value === 'passive';
@@ -429,13 +461,11 @@
             let baseSet = [];
             reviewQueue = [];
 
-            // Reset Analytics
             sessionStartTime = Date.now();
             totalTypedTimeMs = 0;
             typedQuestionCount = 0;
             totalErrors = 0;
 
-            // Get user settings
             isRandom = document.querySelector('input[name="order"]:checked').value === 'random';
             isTyped = document.querySelector('input[name="interaction"]:checked').value === 'typed';
             useMissingVar = document.getElementById('missing-var').checked;
@@ -443,7 +473,6 @@
             totalCycles = parseInt(document.getElementById('cycles').value) || 1;
             let seconds = parseInt(document.getElementById('duration').value) || 0;
             
-            // Constrain limits
             if (isTyped && seconds < 0) seconds = 0;
             if (!isTyped && seconds < 1) seconds = 3; 
             if (seconds > 60) seconds = 60;
@@ -502,7 +531,6 @@
             const totalQuestionsInSession = setSize * totalCycles;
             document.getElementById('progress-text').innerText = `Problem ${currentIndex + 1} of ${totalQuestionsInSession}`;
 
-            // Check if we reached the end of the list
             if (currentIndex >= practiceList.length) {
                 finishPractice();
                 return;
@@ -510,15 +538,10 @@
 
             const currentProblem = practiceList[currentIndex];
             currentProblem.flagged = false;
-
-            // Start timer for average speed tracking
             questionStartTime = Date.now();
 
-            // Determine display format 
-            // 0 = Standard, 1 = Missing A, 2 = Missing B
             let problemFormat = 0;
             if (useMissingVar) {
-                // If Missing Var is ON, only pick 1 or 2 (Never 0)
                 problemFormat = Math.floor(Math.random() * 2) + 1;
             }
 
@@ -526,114 +549,76 @@
             let slot1 = "", slot2 = "", slot3 = "";
 
             if (isTyped) {
-                // Typed Input Mode
                 let inputHtml = `<input type="number" class="answer-input" id="user-input" autocomplete="off">`;
                 
                 if (problemFormat === 1) {
-                    slot1 = inputHtml;
-                    slot2 = currentProblem.b;
-                    slot3 = currentProblem.ans;
+                    slot1 = inputHtml; slot2 = currentProblem.b; slot3 = currentProblem.ans;
                     currentExpectedAnswer = currentProblem.a;
                 } else if (problemFormat === 2) {
-                    slot1 = currentProblem.a;
-                    slot2 = inputHtml;
-                    slot3 = currentProblem.ans;
+                    slot1 = currentProblem.a; slot2 = inputHtml; slot3 = currentProblem.ans;
                     currentExpectedAnswer = currentProblem.b;
                 } else {
-                    slot1 = currentProblem.a;
-                    slot2 = currentProblem.b;
-                    slot3 = inputHtml;
+                    slot1 = currentProblem.a; slot2 = currentProblem.b; slot3 = inputHtml;
                     currentExpectedAnswer = currentProblem.ans;
                 }
                 
-                display.innerHTML = `
-                    <div class="eq-slot">${slot1}</div>
-                    <div class="eq-op">&times;</div>
-                    <div class="eq-slot">${slot2}</div>
-                    <div class="eq-op">=</div>
-                    <div class="eq-slot">${slot3}</div>
-                `;
+                display.innerHTML = `<div class="eq-slot">${slot1}</div><div class="eq-op">&times;</div><div class="eq-slot">${slot2}</div><div class="eq-op">=</div><div class="eq-slot">${slot3}</div>`;
 
                 const inputEl = document.getElementById('user-input');
                 inputEl.focus();
                 
                 inputEl.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        checkTypedAnswer();
-                    }
+                    if (e.key === 'Enter') checkTypedAnswer();
                 });
 
-                // Set Timer if Duration is greater than 0
                 if (durationMs > 0) {
                     timerId = setTimeout(() => {
                         if (inputEl && !inputEl.disabled) {
                             const userVal = parseInt(inputEl.value);
-                            
-                            // Check if the current value matches what we expected
                             if (userVal === currentExpectedAnswer) {
-                                // Auto-enter correct answer
                                 checkTypedAnswer();
                             } else {
-                                // Time ran out and it is empty or wrong
                                 inputEl.disabled = true;
                                 inputEl.classList.add('error');
-                                inputEl.value = currentExpectedAnswer; // Show correct answer
+                                inputEl.value = currentExpectedAnswer; 
                                 flagCurrentProblem();
-                                
-                                setTimeout(() => {
-                                    currentIndex++;
-                                    runNextQuestion();
-                                }, 1500); 
+                                setTimeout(() => { currentIndex++; runNextQuestion(); }, 1500); 
                             }
                         }
                     }, durationMs);
                 }
-
             } else {
-                // Passive Mode (Watch & Wait)
                 if (problemFormat === 1) {
                     slot1 = `<div class="passive-container"><span class="answer-passive" id="ans-text">${currentProblem.a}</span><span class="missing-box" id="q-box">?</span></div>`;
-                    slot2 = currentProblem.b;
-                    slot3 = currentProblem.ans;
+                    slot2 = currentProblem.b; slot3 = currentProblem.ans;
                 } else if (problemFormat === 2) {
                     slot1 = currentProblem.a;
                     slot2 = `<div class="passive-container"><span class="answer-passive" id="ans-text">${currentProblem.b}</span><span class="missing-box" id="q-box">?</span></div>`;
                     slot3 = currentProblem.ans;
                 } else {
-                    slot1 = currentProblem.a;
-                    slot2 = currentProblem.b;
+                    slot1 = currentProblem.a; slot2 = currentProblem.b;
                     slot3 = `<div class="passive-container"><span class="answer-passive" id="ans-text">${currentProblem.ans}</span></div>`;
                 }
                 
-                display.innerHTML = `
-                    <div class="eq-slot">${slot1}</div>
-                    <div class="eq-op">&times;</div>
-                    <div class="eq-slot">${slot2}</div>
-                    <div class="eq-op">=</div>
-                    <div class="eq-slot">${slot3}</div>
-                `;
+                display.innerHTML = `<div class="eq-slot">${slot1}</div><div class="eq-op">&times;</div><div class="eq-slot">${slot2}</div><div class="eq-op">=</div><div class="eq-slot">${slot3}</div>`;
                 
                 timerId = setTimeout(() => {
                     document.getElementById('ans-text').classList.add('visible');
                     const qBox = document.getElementById('q-box');
                     if(qBox) qBox.style.display = 'none';
                     
-                    timerId2 = setTimeout(() => {
-                        currentIndex++;
-                        runNextQuestion();
-                    }, 2000); 
+                    timerId2 = setTimeout(() => { currentIndex++; runNextQuestion(); }, 2000); 
                 }, durationMs);
             }
         }
 
         function checkTypedAnswer() {
-            clearTimeout(timerId); // Stop the timeout since they entered an answer
+            clearTimeout(timerId); 
             
             const inputEl = document.getElementById('user-input');
             const userVal = parseInt(inputEl.value);
 
             if (userVal === currentExpectedAnswer) {
-                // Record speed data
                 const timeTaken = Date.now() - questionStartTime;
                 totalTypedTimeMs += timeTaken;
                 typedQuestionCount++;
@@ -642,26 +627,21 @@
                 inputEl.classList.add('success');
                 inputEl.disabled = true; 
                 
-                setTimeout(() => {
-                    currentIndex++;
-                    runNextQuestion();
-                }, 400); 
+                setTimeout(() => { currentIndex++; runNextQuestion(); }, 400); 
             } else {
                 inputEl.classList.add('error');
-                flagCurrentProblem(); // Log it as wrong behind the scenes
+                flagCurrentProblem(); 
                 
                 setTimeout(() => {
                     inputEl.classList.remove('error');
                     inputEl.value = '';
                     inputEl.focus();
                     
-                    // Resume the timer if one existed
                     if (durationMs > 0) {
                         const remainingTime = durationMs - (Date.now() - questionStartTime);
                         if (remainingTime > 0) {
                             timerId = setTimeout(() => {
                                 if (inputEl && !inputEl.disabled) {
-                                    // Timer expired on the retry attempt
                                     const retryVal = parseInt(inputEl.value);
                                     if (retryVal === currentExpectedAnswer) {
                                         checkTypedAnswer();
@@ -669,21 +649,14 @@
                                         inputEl.disabled = true;
                                         inputEl.classList.add('error');
                                         inputEl.value = currentExpectedAnswer;
-                                        setTimeout(() => {
-                                            currentIndex++;
-                                            runNextQuestion();
-                                        }, 1500);
+                                        setTimeout(() => { currentIndex++; runNextQuestion(); }, 1500);
                                     }
                                 }
                             }, remainingTime);
                         } else {
-                            // If they spent too long guessing and time is up, force next
                             inputEl.disabled = true;
                             inputEl.value = currentExpectedAnswer;
-                            setTimeout(() => {
-                                currentIndex++;
-                                runNextQuestion();
-                            }, 1500);
+                            setTimeout(() => { currentIndex++; runNextQuestion(); }, 1500);
                         }
                     }
                 }, 500);
@@ -694,76 +667,117 @@
             const currentProblem = practiceList[currentIndex];
             if (!currentProblem.flagged) {
                 currentProblem.flagged = true;
-                totalErrors++; // Increment errors for accuracy calc
-                
+                totalErrors++; 
                 const problemString = `${currentProblem.a} &times; ${currentProblem.b} = ${currentProblem.ans}`;
-                if (!reviewQueue.includes(problemString)) {
-                    reviewQueue.push(problemString); 
-                }
+                if (!reviewQueue.includes(problemString)) { reviewQueue.push(problemString); }
             }
         }
 
+        // TROLL LOGIC INITIATED HERE
         function finishPractice() {
             clearTimeout(timerId);
             clearTimeout(timerId2);
             
-            const statsContainer = document.getElementById('stats-container');
-            const completionSubtitle = document.getElementById('completion-subtitle');
-
-            if (!isTyped) {
-                // Hide stats completely for Watch & Wait mode
-                statsContainer.style.display = 'none';
-                completionSubtitle.style.display = 'none';
-            } else {
-                // Show stats for Typed mode
-                statsContainer.style.display = 'block';
-                completionSubtitle.style.display = 'block';
-
-                // Populate Stats
-                const totalTimeMs = Date.now() - sessionStartTime;
-                const totalSeconds = Math.floor(totalTimeMs / 1000);
-                const mins = Math.floor(totalSeconds / 60);
-                const secs = totalSeconds % 60;
-                document.getElementById('stat-time').innerText = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-
-                const totalQ = setSize * totalCycles;
-                let accuracy = 100;
-                if (totalQ > 0) {
-                    accuracy = Math.max(0, Math.round(((totalQ - totalErrors) / totalQ) * 100));
-                }
-                document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
-
-                if (typedQuestionCount > 0) {
-                    const avgMs = totalTypedTimeMs / typedQuestionCount;
-                    const avgSecs = (avgMs / 1000).toFixed(1);
-                    document.getElementById('stat-avg-speed').innerText = `${avgSecs}s`;
-                } else {
-                    document.getElementById('stat-avg-speed').innerText = `N/A`;
-                }
-                
-                // Populate Review Section
-                const reviewSection = document.getElementById('review-section');
-                const reviewListItems = document.getElementById('review-list-items');
-                
-                if (reviewQueue.length > 0) {
-                    reviewSection.style.display = 'block';
-                    let listHtml = '';
-                    reviewQueue.forEach(probStr => {
-                        listHtml += `<li>${probStr}</li>`;
-                    });
-                    reviewListItems.innerHTML = listHtml;
-                } else {
-                    reviewSection.style.display = 'none';
-                }
-            }
-
             document.getElementById('practice-area').style.display = 'none';
             document.getElementById('complete-area').style.display = 'block';
+            
+            // Calculate real stats in the background
+            const totalTimeMs = Date.now() - sessionStartTime;
+            const totalSeconds = Math.floor(totalTimeMs / 1000);
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            document.getElementById('stat-time').innerText = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+            const totalQ = setSize * totalCycles;
+            baseAccuracy = 100;
+            if (totalQ > 0) {
+                baseAccuracy = Math.max(0, Math.round(((totalQ - totalErrors) / totalQ) * 100));
+            }
+            document.getElementById('stat-accuracy').innerHTML = `${baseAccuracy}%`;
+
+            if (typedQuestionCount > 0) {
+                const avgMs = totalTypedTimeMs / typedQuestionCount;
+                const avgSecs = (avgMs / 1000).toFixed(1);
+                document.getElementById('stat-avg-speed').innerText = `${avgSecs}s`;
+            } else {
+                document.getElementById('stat-avg-speed').innerText = `N/A`;
+            }
+            
+            const reviewSection = document.getElementById('review-section');
+            const reviewListItems = document.getElementById('review-list-items');
+            
+            if (reviewQueue.length > 0) {
+                reviewSection.style.display = 'block';
+                let listHtml = '';
+                reviewQueue.forEach(probStr => { listHtml += `<li>${probStr}</li>`; });
+                reviewListItems.innerHTML = listHtml;
+            } else {
+                reviewSection.style.display = 'none';
+            }
+
+            // Lock them in the Troll Tollbooth
+            document.getElementById('troll-input').value = "";
+            document.getElementById('troll-input').classList.remove('error');
+            document.getElementById('troll-error-msg').style.display = 'none';
+            document.getElementById('stats-wrapper').style.display = 'none';
+            document.getElementById('completion-subtitle').style.display = 'none';
+            
+            if (isTyped) {
+                document.getElementById('troll-captcha').style.display = 'block';
+                document.getElementById('troll-input').focus();
+            } else {
+                // If they did passive mode, skip the captcha, just show return button
+                document.getElementById('stats-wrapper').style.display = 'block';
+                document.getElementById('stats-container').style.display = 'none';
+            }
+            
+            // Listen for enter key on the captcha
+            document.getElementById('troll-input').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') verifyTrollCaptcha();
+            });
+        }
+
+        // TROLL VERIFICATION
+        function verifyTrollCaptcha() {
+            const inputEl = document.getElementById('troll-input');
+            const userText = inputEl.value.trim().toLowerCase();
+            const targetText = "dodgers rule, jackson merrill sux";
+
+            if (userText === targetText) {
+                // VICTORY - THE TROLL IS COMPLETE
+                document.getElementById('troll-captcha').style.display = 'none';
+                document.getElementById('stats-wrapper').style.display = 'block';
+                document.getElementById('completion-subtitle').style.display = 'block';
+                
+                // Flood the background Dodger Blue
+                document.body.style.backgroundColor = 'var(--dodger-blue)';
+                
+                // Hijack the accuracy rating
+                let fakeAccuracy = baseAccuracy + 50;
+                document.getElementById('stat-accuracy').innerHTML = `
+                    <span style="text-decoration: line-through; font-size: 1.2rem; color: var(--danger);">${baseAccuracy}%</span>
+                    <br><span style="color: var(--dodger-blue); font-size: 2.2rem;">${fakeAccuracy}%</span>
+                `;
+                
+                document.getElementById('completion-subtitle').innerHTML = `
+                    Session Report <br>
+                    <span style="color: var(--warning); font-weight: bold; font-size: 1.2rem;">(+50% Dodger Fan Bonus Applied)</span>
+                `;
+            } else {
+                // THEY REFUSED. PUNISH THEM.
+                inputEl.classList.add('error');
+                document.getElementById('troll-error-msg').style.display = 'block';
+                
+                setTimeout(() => {
+                    inputEl.classList.remove('error');
+                }, 400);
+            }
         }
 
         function returnToMenu() {
             clearTimeout(timerId);
             clearTimeout(timerId2);
+            document.body.style.backgroundColor = 'var(--bg)'; // Reset the blue-out
             document.getElementById('practice-area').style.display = 'none';
             document.getElementById('complete-area').style.display = 'none';
             document.getElementById('menu-area').style.display = 'block';
